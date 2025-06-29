@@ -34,4 +34,7 @@ See the `images` folder for all dashboard screenshots:
 ![Dashboard 2](./images/2.jpg)
 ![Dashboard 3](./images/3.jpg)
 
+## Author
+- **Shawon Mandal**  
+  [LinkedIn Profile](https://www.linkedin.com/in/shawon-mandal-160440260/)
 
