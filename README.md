@@ -21,17 +21,6 @@ The analysis covers:
 - **Top Selling Companies and Models**
 - **Payment Type Distribution**
 
-Sample dashboards and charts are available in the `images` folder.
-
-## How to Use
-
-1. **Clone this repository**:
-   ```bash
-   git clone https://github.com/yourusername/cars-data-analysis.git
-   ```
-2. **View Dashboards**: Open the images in the `images` folder to explore the analysis.
-3. **Data Source**: Connect to the Supabase database if you wish to reproduce or extend the analysis in Metabase.
-
 ## Tools Used
 
 - [Metabase](https://www.metabase.com/) for data visualization and dashboarding.
