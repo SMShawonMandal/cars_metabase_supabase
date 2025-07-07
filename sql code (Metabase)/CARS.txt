@@ -1,0 +1,606 @@
+----------------------------------------------CARS-------------------------------------
+
+
+1. Revenue
+
+
+WITH
+  sales_saga AS (
+    SELECT
+      vehicle_id,
+      sale_price
+    FROM
+      sales_transactions
+    WHERE
+      {{new_car}}
+      AND sale_date BETWEEN {{from}} AND {{to}}
+  ),
+  vehicle_saga AS (
+    SELECT
+      vehicle_id
+    FROM
+      vehicles
+    WHERE
+      {{fuel_type}}
+  )
+SELECT
+  sum(ss.sale_price) AS Revenue
+FROM
+  sales_saga ss
+  RIGHT JOIN vehicle_saga vs ON ss.vehicle_id = vs.vehicle_id
+
+
+
+2.Total Sold
+
+
+WITH
+  sales_saga AS (
+    SELECT
+      vehicle_id,
+      sale_price
+    FROM
+      sales_transactions
+    WHERE
+      {{new_car}}
+      AND sale_date BETWEEN {{from}} AND {{to}}
+  ),
+  vehicle_saga AS (
+    SELECT
+      vehicle_id
+    FROM
+      vehicles
+    WHERE
+      {{fuel_type}}
+  )
+SELECT
+  count(ss.vehicle_id) as total_sold
+FROM
+  sales_saga ss
+  RIGHT JOIN vehicle_saga vs ON ss.vehicle_id = vs.vehicle_id
+
+
+
+3.  Avg Trade In Value
+
+WITH
+  sales_saga AS (
+    SELECT
+      vehicle_id,
+      sale_price,
+      trade_in_value
+    FROM
+      sales_transactions
+    WHERE
+      {{new_car}}
+      AND sale_date BETWEEN {{from}} AND {{to}}
+      AND trade_in_value > 0
+  ),
+  vehicle_saga AS (
+    SELECT
+      vehicle_id
+    FROM
+      vehicles
+    WHERE
+      {{fuel_type}}
+  )
+SELECT
+  avg(trade_in_value) AS avg_trade_in_value
+FROM
+  sales_saga ss
+  JOIN vehicle_saga vs ON ss.vehicle_id = vs.vehicle_id
+
+
+
+4. New Car Sales Percentage
+
+
+WITH
+  sales_saga_new AS (
+    SELECT
+      count(st.vehicle_id) AS new_vehicle
+    FROM
+      sales_transactions st
+      JOIN vehicles ON st.vehicle_id = vehicles.vehicle_id
+    WHERE
+      is_new_car IS TRUE
+      AND sale_date BETWEEN {{from}} AND {{to}}
+      AND {{fuel_type}}
+  ),
+  sales_saga_all AS (
+    SELECT
+      count(st.vehicle_id) AS all_vehicle
+    FROM
+      sales_transactions st
+      JOIN vehicles ON st.vehicle_id = vehicles.vehicle_id
+    WHERE
+      sale_date BETWEEN {{from}} AND {{to}}
+      AND {{fuel_type}}
+  )
+SELECT
+  coalesce(cast(new_vehicle as float),0) / nullif(all_vehicle,0) as Percentage
+FROM
+  sales_saga_all cross join sales_saga_new
+
+
+
+5. Trade In Rate
+
+
+WITH
+  sales_saga_traded AS (
+    SELECT
+      count(st.vehicle_id) AS traded_vehicle
+    FROM
+      sales_transactions st
+      JOIN vehicles ON st.vehicle_id = vehicles.vehicle_id
+    WHERE
+      trade_in_value > 0
+      AND sale_date BETWEEN {{from}} AND {{to}}
+      AND {{fuel_type}}
+  ),
+  sales_saga_all AS (
+    SELECT
+      count(st.vehicle_id) AS all_vehicle
+    FROM
+      sales_transactions st
+      JOIN vehicles ON st.vehicle_id = vehicles.vehicle_id
+    WHERE
+      sale_date BETWEEN {{from}} AND {{to}}
+      AND {{fuel_type}}
+  )
+SELECT
+  coalesce(cast(traded_vehicle AS float), 0) / nullif(all_vehicle, 0) AS Percentage
+FROM
+  sales_saga_all
+  CROSS JOIN sales_saga_traded
+
+
+
+6.  Avg New Car Price
+
+
+WITH
+  sales_saga AS (
+    SELECT
+      vehicle_id,
+      sale_price
+    FROM
+      sales_transactions
+    WHERE
+      is_new_car is true
+      AND sale_date BETWEEN {{from}} AND {{to}}
+  ),
+  vehicle_saga AS (
+    SELECT
+      vehicle_id
+    FROM
+      vehicles
+    WHERE
+      {{fuel_type}}
+  )
+SELECT
+  avg(ss.sale_price) AS avg_new_car_price
+FROM
+  sales_saga ss
+  RIGHT JOIN vehicle_saga vs ON ss.vehicle_id = vs.vehicle_id
+
+
+7. Avg Used Car Price
+
+WITH
+  sales_saga AS (
+    SELECT
+      vehicle_id,
+      sale_price
+    FROM
+      sales_transactions
+    WHERE
+      is_new_car is false
+      AND sale_date BETWEEN {{from}} AND {{to}}
+  ),
+  vehicle_saga AS (
+    SELECT
+      vehicle_id
+    FROM
+      vehicles
+    WHERE
+      {{fuel_type}}
+  )
+SELECT
+  avg(ss.sale_price) AS avg_new_car_price
+FROM
+  sales_saga ss
+  RIGHT JOIN vehicle_saga vs ON ss.vehicle_id = vs.vehicle_id
+
+
+
+
+8. EV Sales Share
+
+
+WITH
+  sales_saga_ev AS (
+    SELECT
+      count(st.vehicle_id) AS ev_vehicle
+    FROM
+      sales_transactions st
+      JOIN vehicles ON st.vehicle_id = vehicles.vehicle_id
+    WHERE
+      sale_date BETWEEN {{from}} AND {{to}}
+      AND vehicles.fuel_type = 'Electric'
+  ),
+  sales_saga_all AS (
+    SELECT
+      count(st.vehicle_id) AS all_vehicle
+    FROM
+      sales_transactions st
+      JOIN vehicles ON st.vehicle_id = vehicles.vehicle_id
+    WHERE
+      sale_date BETWEEN {{from}} AND {{to}}
+  )
+SELECT
+  coalesce(cast(ev_vehicle AS float), 0) / nullif(all_vehicle, 0) AS Percentage
+FROM
+  sales_saga_all
+  CROSS JOIN sales_saga_ev
+
+
+9. Avg Loan Interest Rate
+
+WITH
+  loan_saga AS (
+    SELECT
+      loan_id,
+      loan_interest_rate
+    FROM
+      loans
+  ),
+  sales_saga AS (
+    SELECT
+      loan_id,
+      vehicle_id
+    FROM
+      sales_transactions
+    WHERE
+      {{new_car}}
+      AND sale_date BETWEEN {{from}} AND {{to}}
+  ),
+  vehicle_saga AS (
+    SELECT
+      vehicle_id
+    FROM
+      vehicles
+	where {{fuel_type}}
+  )
+SELECT
+  avg(loan_interest_rate) as avg_loan_interest_rate
+FROM
+  loan_saga ls
+  JOIN sales_saga ss ON ls.loan_id = ss.loan_id
+  JOIN vehicle_saga vs ON ss.vehicle_id = vs.vehicle_id
+
+
+
+10.Avg Monthly Loan
+
+
+WITH
+  loan_saga AS (
+    SELECT
+      loan_id,
+      monthly_payment
+    FROM
+      loans
+  ),
+  sales_saga AS (
+    SELECT
+      loan_id,
+      vehicle_id
+    FROM
+      sales_transactions
+    WHERE
+      {{new_car}}
+      AND sale_date BETWEEN {{from}} AND {{to}}
+  ),
+  vehicle_saga AS (
+    SELECT
+      vehicle_id
+    FROM
+      vehicles
+	where {{fuel_type}}
+  )
+SELECT
+  avg(monthly_payment) as  Avg_Monthly_Loan
+FROM
+  loan_saga ls
+  JOIN sales_saga ss ON ls.loan_id = ss.loan_id
+  JOIN vehicle_saga vs ON ss.vehicle_id = vs.vehicle_id
+
+
+11. Revenue By Quarter
+
+
+WITH
+  sale_saga AS (
+    SELECT
+      date_trunc('Quarter', sale_date) AS Quarter_st,
+      sum(sale_price) AS Revenue
+    FROM
+      sales_transactions
+      JOIN vehicles ON sales_transactions.vehicle_id = vehicles.vehicle_id
+    WHERE
+      {{new_car}}
+      AND sale_date BETWEEN {{from}} AND {{to}}
+      AND {{Fuel_type}}
+    GROUP BY
+      Quarter_st
+  )
+SELECT
+  'Q' || EXTRACT(
+    QUARTER
+    FROM
+      Quarter_st
+  ) || '-' || TO_CHAR(Quarter_st, 'YY') AS Quarter,
+  Revenue
+FROM
+  sale_saga
+ORDER BY
+  Quarter_st
+
+
+12. Sales Volume By State
+
+
+
+SELECT
+  dealership_state,
+  COUNT(*) AS count
+FROM
+  sales_transactions
+  LEFT JOIN dealerships ON sales_transactions.dealership_id = Dealerships.dealership_id
+  LEFT JOIN vehicles ON sales_transactions.vehicle_id = Vehicles.vehicle_id
+WHERE
+  {{fuel_type}}
+  AND {{new_car}}
+  AND sale_date BETWEEN {{from}} AND {{to}}
+GROUP BY
+  dealership_state
+ORDER BY
+  count DESC,
+  dealership_state ASC
+LIMIT
+  7
+
+
+13. Top Selling Company
+
+
+SELECT
+  make,
+  COUNT(*) AS COUNT
+FROM
+  sales_transactions
+  LEFT JOIN dealerships ON sales_transactions.dealership_id = Dealerships.dealership_id
+  LEFT JOIN vehicles ON sales_transactions.vehicle_id = Vehicles.vehicle_id
+WHERE
+  {{fuel_type}}
+  AND {{new_car}}
+  AND sale_date BETWEEN {{from}} AND {{to}}
+GROUP BY
+  make
+ORDER BY
+  COUNT DESC
+LIMIT
+  7
+
+
+14. Top Selling Models
+
+SELECT
+  concat(vehicles.make,' ',vehicles.model) as modeled,
+  COUNT(*) AS COUNT
+FROM
+  sales_transactions
+  LEFT JOIN dealerships ON sales_transactions.dealership_id = Dealerships.dealership_id
+  LEFT JOIN vehicles ON sales_transactions.vehicle_id = Vehicles.vehicle_id
+WHERE
+  {{fuel_type}}
+  AND {{new_car}}
+  AND sale_date BETWEEN {{from}} AND {{to}}
+GROUP BY
+  modeled
+ORDER BY
+  COUNT DESC
+LIMIT
+10
+
+
+
+15. Payment Type Distribution
+
+SELECT
+  payment_type,
+  COUNT(*) AS COUNT
+FROM
+  sales_transactions
+  LEFT JOIN vehicles ON sales_transactions.vehicle_id = Vehicles.vehicle_id
+WHERE
+  {{fuel_type}}
+  AND {{new_car}}
+  AND sale_date BETWEEN {{from}} AND {{to}}
+  AND {{luxury}}
+GROUP BY
+  sales_transactions.payment_type
+ORDER BY
+  sales_transactions.payment_type ASC
+
+
+16.  Top Common Service
+
+
+WITH
+  vehicle_repair_saga AS (
+    SELECT
+      vsh.vehicle_id,
+      service_type,
+      service_date
+    FROM
+      vehicle_service_history vsh
+      JOIN vehicles ON vsh.vehicle_id = vehicles.vehicle_id
+    WHERE
+      service_date BETWEEN {{from}} AND {{to}}
+      AND {{fuel_type}}
+      AND {{luxury}}
+  )
+SELECT
+  service_type,
+  count(*) AS counted
+FROM
+  vehicle_repair_saga
+GROUP BY
+  service_type
+ORDER BY
+  counted DESC
+
+
+
+17. # of People Switched
+
+
+WITH
+  sales_saga AS (
+    SELECT
+      vehicle_id
+    FROM
+      sales_transactions
+    WHERE
+      trade_in_value > 0
+      AND sale_date BETWEEN {{from}} AND {{to}}
+	  and {{new_car}}
+  ),
+  vehicle_saga AS (
+    SELECT
+      vehicle_id,
+      fuel_type
+    FROM
+      vehicles
+    WHERE
+      {{fuel_type}}
+      AND {{luxury}}
+  )
+SELECT
+  fuel_type,
+  count(vs.vehicle_id) AS switched
+FROM
+  vehicle_saga vs
+  JOIN sales_saga ss ON ss.vehicle_id = vs.vehicle_id
+GROUP BY
+  fuel_type
+order by switched desc
+
+
+
+18. Revenue by State (Map)
+
+
+SELECT
+  "Dealerships"."dealership_state" AS "Dealerships__dealership_state",
+  SUM("public"."sales_transactions"."sale_price") AS "sum"
+FROM
+  "public"."sales_transactions"
+ 
+LEFT JOIN "public"."dealerships" AS "Dealerships" ON "public"."sales_transactions"."dealership_id" = "Dealerships"."dealership_id"
+  LEFT JOIN "public"."vehicles" AS "Vehicles" ON "public"."sales_transactions"."vehicle_id" = "Vehicles"."vehicle_id"
+GROUP BY
+  "Dealerships"."dealership_state"
+ORDER BY
+  "Dealerships"."dealership_state" ASC
+
+
+19. Average of  Interest Rate By Credit Score
+
+
+SELECT
+  (
+    FLOOR(
+      (
+        (
+          "public"."customers"."customer_credit_score" - 300.0
+        ) / 75.0
+      )
+    ) * 75.0
+  ) + 300.0 AS "customer_credit_score",
+  AVG("Loans"."loan_interest_rate") AS "avg"
+FROM
+  "public"."customers"
+ 
+LEFT JOIN "public"."sales_transactions" AS "Sales Transactions - Customer" ON "public"."customers"."customer_id" = "Sales Transactions - Customer"."customer_id"
+  LEFT JOIN "public"."loans" AS "Loans" ON "Sales Transactions - Customer"."loan_id" = "Loans"."loan_id"
+GROUP BY
+  (
+    FLOOR(
+      (
+        (
+          "public"."customers"."customer_credit_score" - 300.0
+        ) / 75.0
+      )
+    ) * 75.0
+  ) + 300.0
+ORDER BY
+  (
+    FLOOR(
+      (
+        (
+          "public"."customers"."customer_credit_score" - 300.0
+        ) / 75.0
+      )
+    ) * 75.0
+  ) + 300.0 ASC
+
+
+
+
+20.  Top Car by accident
+
+
+SELECT
+  "source"."Model" AS "Model",
+  COUNT(*) AS "count"
+FROM
+  (
+    SELECT
+      "public"."vehicle_service_history"."vehicle_id" AS "vehicle_id",
+      "public"."vehicle_service_history"."has_accident" AS "has_accident",
+      CONCAT("Vehicles"."make", "Vehicles"."model") AS "Model",
+      "Vehicles"."vehicle_id" AS "Vehicles__vehicle_id",
+      "Vehicles"."fuel_type" AS "Vehicles__fuel_type",
+      "Vehicles"."make" AS "Vehicles__make",
+      "Vehicles"."model" AS "Vehicles__model"
+    FROM
+      "public"."vehicle_service_history"
+     
+LEFT JOIN "public"."vehicles" AS "Vehicles" ON "public"."vehicle_service_history"."vehicle_id" = "Vehicles"."vehicle_id"
+   
+WHERE
+      (
+        "public"."vehicle_service_history"."has_accident" = TRUE
+      )
+     
+   AND (
+        ("Vehicles"."fuel_type" = 'Hybrid')
+       
+    OR ("Vehicles"."fuel_type" = 'Plug-in Hybrid')
+        OR ("Vehicles"."fuel_type" = 'Electric')
+        OR ("Vehicles"."fuel_type" = 'Gasoline')
+      )
+  ) AS "source"
+GROUP BY
+  "source"."Model"
+ORDER BY
+  "count" DESC,
+  "source"."Model" ASC
+LIMIT
+  10
+
+
