@@ -12,7 +12,7 @@ This project presents an analysis of car sales, service, and customer trends usi
 - **Trade-In Rate:** 45.14%
 - **Average New Car Sale Price:** $62.0k
 - **Average Used Car Sale Price:** $40.6k
-- **EV Sales Share:** 26.89%
+- **EV Sales Share:** 24.55%
 - **Average Loan Interest Rate:** 6.91%
 - **Average Monthly Loan Payment:** $632.04
 
