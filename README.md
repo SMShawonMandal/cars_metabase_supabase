@@ -60,9 +60,9 @@ The analysis covers:
 
 See the `images` folder for all dashboard screenshots:
 
-![Dashboard 1](./images/1.jpg)
-![Dashboard 2](./images/2.jpg)
-![Dashboard 3](./images/3.jpg)
+![Dashboard 1](./image/1.jpg)
+![Dashboard 2](./image/2.jpg)
+![Dashboard 3](./image/3.jpg)
 
 ## Author
 
